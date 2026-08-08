@@ -1,0 +1,145 @@
+import sys
+
+
+def get_manhattan_distance(matrix, k):
+    """Har bir katakning o'z joyidan qanchalik uzoqligini hisoblaydi (Evristika)"""
+    distance = 0
+    for r in range(k):
+        for c in range(k):
+            val = matrix[r][c]
+            if val != 0:
+                # val soni maqsad bo'yicha qaysi rasmda turishi kerakligi:
+                target_r = val // k
+                target_c = val % k
+                distance += abs(r - target_r) + abs(c - target_c)
+    return distance
+
+
+def find_zero(matrix, k):
+    """Bo'sh katak (0) ning koordinatalarini topadi"""
+    for r in range(k):
+        for c in range(k):
+            if matrix[r][c] == 0:
+                return r, c
+
+
+def main():
+    # 1. Inputni o'qib olish
+    input_data = sys.stdin.read().split()
+    if not input_data:
+        return
+
+    k = int(input_data[0])
+    tiles = [int(x) for x in input_data[1:]]
+
+    # 2. Chiziqli ro'yxatni k x k matritsaga o'tkazish
+    matrix = []
+    for i in range(0, len(tiles), k):
+        matrix.append(tiles[i:i + k])
+
+    # Boshlang'ich holatni tekshirish
+    zero_r, zero_c = find_zero(matrix, k)
+    initial_h = get_manhattan_distance(matrix, k)
+
+    print(f"Matritsa o'lchami: {k}x{k}")
+    print(f"Bo'sh katak o'rni: qator {zero_r}, ustun {zero_c}")
+    print(f"Boshlang'ich Manxetten masofasi: {initial_h}")
+
+
+if __name__ == "__main__":
+    main()
+
+
+# 👩‍💻2-code👩‍💻💻💻
+import sys
+import heapq
+
+
+def get_manhattan_distance(board_tuple, k):
+    """Har bir katakning asl joyidan uzoqligini hisoblaydi"""
+    distance = 0
+    for i, val in enumerate(board_tuple):
+        if val != 0:
+            target_r = val // k
+            target_c = val % k
+            current_r = i // k
+            current_c = i % k
+            distance += abs(current_r - target_r) + abs(current_c - target_c)
+    return distance
+
+
+def solve_n_puzzle():
+    # 1. Input ma'lumotlarini o'qish
+    input_data = sys.stdin.read().split()
+    if not input_data:
+        return
+
+    k = int(input_data[0])
+    start_board = tuple(int(x) for x in input_data[1:])
+
+    # Maqsad qilingan yakuniy holat (0, 1, 2, ..., N)
+    goal_board = tuple(range(k * k))
+
+    # Agar boshidanoq to'g'ri bo'lsa
+    if start_board == goal_board:
+        print(0)
+        return
+
+    # Yurishlar yo'nalishi (Bo'sh katak '0' ning harakati)
+    # (qator o'zgarishi, ustun o'zgarishi, yo'nalish nomi)
+    moves = [
+        (-1, 0, 'UP'),
+        (1, 0, 'DOWN'),
+        (0, -1, 'LEFT'),
+        (0, 1, 'RIGHT')
+    ]
+
+    # Priority Queue (Prioritetli navbat) uchun: (f_score, g_score, joriy_holat, yo'llar_ro'yxati)
+    # f_score = g_score (qadamlar) + h_score (Manhattan masofasi)
+    initial_h = get_manhattan_distance(start_board, k)
+    queue = [(initial_h, 0, start_board, [])]
+
+    # Takroriy holatlarni tekshirish uchun To'plam (Set)
+    visited = set()
+    visited.add(start_board)
+
+    while queue:
+        f, g, current_board, path = heapq.heappop(queue)
+
+        # Maqsadga erishilganda natijani chiqarish
+        if current_board == goal_board:
+            print(len(path))
+            for move in path:
+                print(move)
+            return
+
+        # '0' (bo'sh katak) indeksini topish
+        zero_idx = current_board.index(0)
+        zero_r, zero_c = zero_idx // k, zero_idx % k
+
+        # To'rt tomonga yurishni tekshirish
+        for dr, dc, move_name in moves:
+            new_r, new_c = zero_r + dr, zero_c + dc
+
+            # Matritsa chegarasidan chiqib ketmaslik sharti
+            if 0 <= new_r < k and 0 <= new_c < k:
+                new_zero_idx = new_r * k + new_c
+
+                # Elementlar o'rnini almashtirish (Yangi holat yaratish)
+                new_board_list = list(current_board)
+                new_board_list[zero_idx], new_board_list[new_zero_idx] = new_board_list[new_zero_idx], new_board_list[
+                    zero_idx]
+                new_board_tuple = tuple(new_board_list)
+
+                # Agar bu holat oldin ko'rilmagan bo.lsa, navbatga qo'shish
+                if new_board_tuple not in visited:
+                    visited.add(new_board_tuple)
+                    new_g = g + 1
+                    new_h = get_manhattan_distance(new_board_tuple, k)
+                    new_f = new_g + new_h
+                    heapq.heappush(queue, (new_f, new_g, new_board_tuple, path + [move_name]))
+
+
+if __name__ == "__main__":
+    solve_n_puzzle()
+
